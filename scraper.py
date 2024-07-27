@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 from dotenv import load_dotenv
 import os
+from sqlalchemy import create_engine
 
 load_dotenv()
 
@@ -47,7 +48,7 @@ class InsightScraper:
         result = self.parse(response)
         print('Product information collected!')
 
-        return result
+        return result['products']
 
 
     def to_database(self, products):
@@ -69,6 +70,7 @@ class InsightScraper:
             "searchProductId" VARCHAR(100) NOT NULL PRIMARY KEY,
             "alternateImage" TEXT,
             "availability" VARCHAR(20),
+            "unlimited" BOOLEAN,
             "availabilityMessage" VARCHAR(50),
             "averageRating" FLOAT4,
             "description" TEXT,
@@ -82,7 +84,12 @@ class InsightScraper:
             "materialId" VARCHAR (100),
             "reviewCount" INT4,
             "sku" VARCHAR (100),
+            "regularStock" INT4,
+            "coiStock" INT4,
+            "csiStock" INT4,
+            "reservedStock" INT4,
             "callForPrice" bool,
+            "displayDiscount" BOOLEAN,
             "bullet1" TEXT,
             "bullet2" TEXT,
             "bullet3" TEXT,
@@ -102,13 +109,15 @@ class InsightScraper:
             df.to_sql("temp_table", conn, index=False, if_exists="append")
 
             conn.exec_driver_sql("""
-            INSERT INTO "public"."products" ("searchProductId", "alternateImage", "availability", "availabilityMessage",
+            INSERT INTO "public"."products" ("searchProductId", "alternateImage", "availability", "unlimited", "availabilityMessage",
             "averageRating", "description", "image", "manufacturerImage", "insightPrice", "listPrice", "longDescription",
-            "manufacturerName", "manufacturerPartNumber", "materialId", "reviewCount", "sku", "callForPrice", "bullet1",
+            "manufacturerName", "manufacturerPartNumber", "materialId", "reviewCount", "sku", "regularStock", "coiStock",
+            "csiStock", "reservedStock", "callForPrice", "displayDiscount", "bullet1",
             "bullet2", "bullet3", "bullet4", "bullet5", "webPrice")
-            SELECT "searchProductId", "alternateImage", "availability", "availabilityMessage",
+            SELECT "searchProductId", "alternateImage", "availability", "unlimited", "availabilityMessage",
             "averageRating", "description", "image", "manufacturerImage", "insightPrice", "listPrice", "longDescription",
-            "manufacturerName", "manufacturerPartNumber", "materialId", "reviewCount", "sku", "callForPrice", "bullet1",
+            "manufacturerName", "manufacturerPartNumber", "materialId", "reviewCount", "sku", "regularStock", "coiStock",
+            "csiStock", "reservedStock", "callForPrice", "displayDiscount", "bullet1",
             "bullet2", "bullet3", "bullet4", "bullet5", "webPrice" FROM "temp_table"
             ON CONFLICT ("searchProductId")
             DO UPDATE SET
